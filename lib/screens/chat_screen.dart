@@ -77,8 +77,11 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                   MaterialButton(
                     onPressed: () {
-                      _firestore.collection('messages').add(
-                          {'text': messageText, 'sender': loggedInUser.email});
+                      _firestore.collection('messages').add({
+                        'text': messageText,
+                        'sender': loggedInUser.email,
+                        'time': DateTime.now() 
+                      });
                       textController.clear();
                     },
                     child: const Text(
@@ -96,13 +99,18 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 }
 
+//creating message bubbles to show each message
 class MessageBubble extends StatelessWidget {
   final bool isMe;
   final String sender;
   final String message;
+  final Timestamp time;
 
   MessageBubble(
-      {required this.sender, required this.message, required this.isMe});
+      {required this.sender,
+      required this.message,
+      required this.isMe,
+      required this.time});
 
   @override
   Widget build(BuildContext context) {
@@ -144,7 +152,9 @@ class MessageStream extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: _firestore.collection('messages').snapshots(),
+      stream: _firestore
+          .collection('messages')
+          .snapshots(),
       builder: (context, snapshot) {
         List<MessageBubble> messageBubbles = [];
         if (!snapshot.hasData) {
@@ -161,13 +171,16 @@ class MessageStream extends StatelessWidget {
         for (var message in messages) {
           final messageText = message.get('text');
           final messageSender = message['sender'];
+          final messageTime = message['time'];
           final messageWidget = MessageBubble(
             sender: messageSender,
             message: messageText,
             isMe: messageSender == currentUser,
+            time: messageTime,
           );
 
           messageBubbles.add(messageWidget);
+          messageBubbles.sort((a, b) => b.time.compareTo(a.time));
         }
 
         return Expanded(
